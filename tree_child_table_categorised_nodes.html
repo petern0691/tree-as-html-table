@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+table {
+	border: 1px solid black;
+}
+
+th,
+td {
+	border: 1px solid black;
+}
+
+div.options,
+table.options {
+	margin: 15px;
+}
+
+table.options {
+	border-collapse: collapse;
+	text-align: center;
+	display: inline-table;
+}
+
+table.options th,
+table.options td {
+	padding: 5px;
+}
+</style>
+<script>
+const nodes = [
+    { nodeCategoryId: "a", id: "a-1", childNodes: ["b-1", "b-2", "b-3"] },
+    { nodeCategoryId: "a", id: "a-2", childNodes: ["b-3"] },
+    { nodeCategoryId: "a", id: "a-3", childNodes: [] },
+    { nodeCategoryId: "b", id: "b-1", childNodes: ["c-1"] },
+    { nodeCategoryId: "b", id: "b-2", childNodes: ["c-2", "c-3","c-4", "c-5", "c-6", "d-1", "d-2"] },
+    { nodeCategoryId: "b", id: "b-3", childNodes: ["c-5", "c-6"] },
+    { nodeCategoryId: "c", id: "c-1", childNodes: ["e-1"] },
+    { nodeCategoryId: "c", id: "c-2", childNodes: [] },
+    { nodeCategoryId: "c", id: "c-3", childNodes: ["e-1", "e-2", "d-3"] },
+    { nodeCategoryId: "c", id: "c-4", childNodes: [] },
+    { nodeCategoryId: "c", id: "c-5", childNodes: [] },
+    { nodeCategoryId: "c", id: "c-6", childNodes: [] },
+    { nodeCategoryId: "e", id: "e-1", childNodes: [] },
+    { nodeCategoryId: "e", id: "e-2", childNodes: [] },
+    { nodeCategoryId: "d", id: "d-1", childNodes: [] },
+    { nodeCategoryId: "d", id: "d-2", childNodes: [] },
+    { nodeCategoryId: "d", id: "d-3", childNodes: [] }
+];
+
+//  Build a list of structured nodes
+nodeCategoryIds = [];
+list = [];
+for ( var i = 0; i < nodes.length; i++ ) {
+	if ( ! nodeCategoryIds.includes(nodes[i].nodeCategoryId) ) nodeCategoryIds.push(nodes[i].nodeCategoryId);
+	list.push([ nodes[i].id, nodes[i].nodeCategoryId, nodes[i].childNodes, [], undefined ]);
+}
+nodeCategoryIds.sort()
+
+//  A utility, given a node id return the structured node
+function getListNode(id) {
+	for ( var i = 0; i < list.length; i++ ) {
+		if ( list[i][0] == id ) return list[i];
+	}
+	return undefined;
+}
+
+//  Populate structured nodes with their structured children
+for ( var i = 0; i < list.length; i++ ) {
+	var children = [];
+	for ( var j = 0; j < list[i][2].length; j++ ) {
+		children.push(getListNode(list[i][2][j]));
+	}
+	list[i][2] = children;
+}
+
+//  Populate structured nodes with their structured parents  //  Not required in this example, but done for completeness
+for ( var i = 0; i < list.length; i++ ) {
+	for ( var j = 0; j < list[i][2].length; j++ ) {
+		list[i][2][j][3].push(list[i]);
+	}
+}
+
+//  Get the structured nodes with no parents
+treeRoots = [];
+for ( var i = 0; i < list.length; i++ ) {
+	if ( list[i][3].length == 0 ) treeRoots.push(list[i]);
+}
+
+function spanner(node) {
+	//  Calculate the row span required for a node, by recursively walking the tree for the node
+	var span;
+	if ( node[2].length == 0 ) {
+		span = 1
+		node[4] = span;
+	} else {
+		var span = 0;
+		for ( var i = 0; i < node[2].length; i++ ) {
+			span += spanner(node[2][i]);
+		}
+		node[4] = span
+	}
+	return span
+}
+
+//  Calculate rowspans for treeRoot
+for ( var i = 0; i < treeRoots.length; i++ ) {
+	spanner( treeRoots[i] );
+}
+
+//  Utility to print a tree root
+function printTR(treeRoots) {
+	var text = "";
+	for ( var i = 0; i < treeRoots.length; i++ ) {
+		text += printNT(treeRoots[i], 0);
+	}
+	return text;
+}
+
+//  Utility to space out fields, indent, etc.
+function spacer(n) {
+	var N = n * 3;
+	var text = "";
+	for ( var i = 0; i < N; i++ ) {
+		text += "&nbsp;"
+	}
+	return text;
+}
+
+//  Utility to print a node tree
+function printNT(node, depth) {
+	var text = "";
+	text += '<br>' + spacer(depth) + node[0] + spacer(1) + node[4] + spacer(1) + node[1];
+	for ( var j = 0; j < node[2].length; j++ ) {
+		text += printNT(node[2][j], depth + 1);
+	}
+	return text;
+}
+
+function tableTR(treeRoots) {
+	//  Convert a root tree into a set of rows
+	var text = "";
+	for ( var i = 0; i < treeRoots.length; i++ ) {
+		text += '<tr>' + tableNT(treeRoots[i], "");
+	}
+	return text;
+}
+
+function sourcePadding(parent, child) {
+	//  Generate empty table cells when child source is more than one source away from parent source.
+	//  $ is to end of row of sources.
+	var text = "";
+	if ( child == "$" ) {
+		for ( var i = 1; i < nodeCategoryIds.length - nodeCategoryIds.indexOf(parent); i++ ) {
+			text += '<td name="empty">' + '</td>';
+		}
+	} else if ( parent != child && parent != "" ) {
+		for ( var i = 1; i < nodeCategoryIds.indexOf(child) - nodeCategoryIds.indexOf(parent); i++ ) {
+			text += '<td name="empty">' + '</td>';
+		}
+	}
+	return text;
+}
+
+function tableNT(node, parentSource) {
+	//  Convert a node tree into table rows
+	var text = "";
+	if ( node[4] == 1 ) {
+		if ( node[2].length == 1 ) {
+			text += sourcePadding(parentSource, node[1]) + '<td>' + node[0] + '</td>' + tableNTfr(node[2][0], node[1]);
+		} else {
+			text += sourcePadding(parentSource, node[1]) + '<td>' + node[0] + '</td>' + sourcePadding(node[1], "$") + '</tr>';
+		}
+	} else {
+		text += sourcePadding(parentSource, node[1]) + '<td rowspan="' + node[4] + '">' + node[0] + '</td>' + tableNTfr(node[2][0], node[1]);
+		text += tableNTor(node[2][0], node[1])
+		for ( var i = 1; i < node[2].length; i++ ) {
+			text += '<tr>' + tableNT(node[2][i], node[1])
+		}
+	}
+	return text;
+}
+
+function tableNTfr(node, parentSource) {
+	//  The first row in a row span
+	var text = "";
+	if ( node[4] == 1 ) {
+		if ( node[2].length == 1 ) {
+			text += sourcePadding(parentSource, node[1]) + '<td>' + node[0] + '</td>' + tableNTfr(node[2][0], node[1]);
+		} else {
+			text += sourcePadding(parentSource, node[1]) + '<td>' + node[0] + '</td>' + sourcePadding(node[1], "$") + '</tr>';
+		}
+	} else {
+		text += sourcePadding(parentSource, node[1]) + '<td rowspan="' + node[4] + '">' + node[0] + '</td>' + tableNTfr(node[2][0], node[1]);
+	}
+	return text;	
+}
+
+function tableNTor(node) {
+	//  The other rows in a row span
+	var text = "";
+	if ( node[2].length != 0 ) {
+		if ( node[4] > 1 ) {
+			text += tableNTor(node[2][0], node[1])
+			for ( var i = 1; i < node[2].length; i++ ) {
+				text += '<tr>' + tableNT(node[2][i], node[1])
+			}
+		}
+	}
+	return text;
+}
+
+function tableHead(nodeCategoryIds) {
+	text = "";
+	for ( var i = 0; i < nodeCategoryIds.length; i++ ) {
+		text += '<th>' + nodeCategoryIds[i] + '</th>';
+	}
+	return '<tr>' + text + '</tr>';
+}
+
+var treeTable;
+function doStuff() {
+	document.getElementById("separate").style.background = "pink";
+	document.getElementById("enBorder").style.background = "pink";
+
+	var printer = document.getElementById("printer");
+	printer.innerHTML = printTR( treeRoots );
+	treeTable = document.getElementById("treeTable");
+	treeTable.innerHTML = tableHead(nodeCategoryIds) + tableTR(treeRoots);
+}
+
+var borders = true;
+
+function enBorder() {
+	var emptyCells = document.getElementsByName("empty");
+	for ( var i = 0; i < emptyCells.length; i++ ) {
+		emptyCells[i].style.border = "1px solid black";
+	}
+	borders = true;
+
+	document.getElementById("enBorder").style.background = "pink";
+	document.getElementById("deBorder").style.background = "none";
+}
+
+function deBorder() {
+	var emptyCells = document.getElementsByName("empty");
+	for ( var i = 0; i < emptyCells.length; i++ ) {
+		emptyCells[i].style.border = "none";
+	}
+	borders = false;
+
+	document.getElementById("deBorder").style.background = "pink";
+	document.getElementById("enBorder").style.background = "none";
+}
+
+function sortAbove() {
+	for ( var i = 0; i < list.length; i++ ) {
+		list[i][2].sort((a,b) => { if ( a[1] == b[1] ) return 0; if ( nodeCategoryIds.indexOf(a[1]) < nodeCategoryIds.indexOf(b[1]) ) return 1; return -1;});
+	}
+	treeTable.innerHTML = tableHead(nodeCategoryIds) + tableTR(treeRoots);
+	if ( ! borders ) deBorder();
+
+	document.getElementById("sortAbove").style.background = "pink";
+	document.getElementById("sortBelow").style.background = "none";
+
+}
+
+function sortBelow() {
+	for ( var i = 0; i < list.length; i++ ) {
+		list[i][2].sort((a,b) => { if ( a[1] == b[1] ) return 0; if ( nodeCategoryIds.indexOf(a[1]) < nodeCategoryIds.indexOf(b[1]) ) return -1; return 1;});
+	}
+	treeTable.innerHTML = tableHead(nodeCategoryIds) + tableTR(treeRoots);
+	if ( ! borders ) deBorder();
+
+	document.getElementById("sortBelow").style.background = "pink";
+	document.getElementById("sortAbove").style.background = "none";
+}
+
+function collapse() {
+	document.getElementById("treeTable").style.borderCollapse = "collapse";
+
+	document.getElementById("collapse").style.background = "pink";
+	document.getElementById("separate").style.background = "none";
+}
+
+function separate() {
+	document.getElementById("treeTable").style.borderCollapse = "separate";
+
+	document.getElementById("separate").style.background = "pink";
+	document.getElementById("collapse").style.background = "none";
+}
+</script>
+</head>
+<body onload="doStuff()">
+Tree data characteristics:
+<ul>
+	<li>Nodes:
+		<ul>
+			<li>Node id</li>
+			<li>Node category id</li>
+			<li>Child node ids</li>
+		</ul>
+	</li>
+	<li>Constraints and assumptions:
+		<ul>
+			<li>Root to leaf path category sequence must match order of categories</li>
+			<li>Trees can share branches, but there must be no cycles</li>
+		</ul>
+	</li>
+</ul>
+Table format:
+<ul>
+	<li>Header row of node categories</li>
+	<li>Parent nodes row span child nodes</li>
+	<li>Skipped categories in root to leaf path are padded with empty cells</li>
+	<li>Trailing unused categories after leaf path are padded with empty cells</li>
+</ul>
+<div>
+Parsed nodes with calculated row spans and node category:
+<div>
+<code id="printer">
+</code>
+</div>
+</div>
+<br>
+<div>
+Tree converted to table rows:<br>&nbsp;
+<div>
+<table id="treeTable">
+</table>
+</div>
+</div>
+<div class="options">
+Formats:
+<table class="options">
+	<tr><th>Borders</th>
+	<tr><td id="collapse" onclick="collapse()">Collapse</td></tr>
+	<tr><td id="separate" onclick="separate()">Separate</td></tr>
+</table>
+<table class="options">
+	<tr><th>Empty Cells</th>
+	<tr><td id="enBorder" onclick="enBorder()">Bordered</td></tr>
+	<tr><td id="deBorder" onclick="deBorder()">No border</td></tr>
+</table>
+<table class="options">
+	<tr><th>Skipped categories</th>
+	<tr><td id="sortAbove" onclick="sortAbove()">Sort above</td></tr>
+	<tr><td id="sortBelow" onclick="sortBelow()">Sort below</td></tr>
+	<tr><td style="background: lightgrey;)">Source order</td></tr>
+</table>
+</div>
+</body>
+</html>

@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+table,
+th,
+td {
+	border: 1px solid black;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+.tree td {
+	position: relative;
+}
+
+.tree div {
+	padding: 2px;
+}
+
+.tree td > div.tip {
+	display: block;
+	visibility: hidden;
+
+	position: absolute;
+	top: -1.25em;
+	left: 95%;
+	z-index: 1;
+
+	border: 1px solid grey;
+	background: lightyellow;
+}
+
+.tree td:not(:last-of-type):hover {
+	background: lightyellow;
+}
+
+.tree td:not(:last-of-type):hover > div.tip {
+	visibility: visible;
+}
+
+.tree .leaf {
+	float: left;
+}
+
+.tree .value {
+	float: right;
+	margin-left: 35px;
+	background: lightyellow;
+}
+
+div.options,
+table.options {
+	margin: 15px;
+}
+
+table.options {
+	text-align: center;
+	display: inline-table;
+}
+
+table.options th,
+table.options td {
+	padding: 5px;
+}
+</style>
+<script>
+const nodes = [
+    { value: "alpha", id: "a-1", parentNodeIds: [] },
+    { value: "beta", id: "a-2", parentNodeIds: [] },
+    { value: "gamma", id: "a-3", parentNodeIds: [] },
+    { value: "delta", id: "b-1", parentNodeIds: ["a-1"] },
+    { value: "blue", id: "b-2", parentNodeIds: ["a-1"] },
+    { value: "violet", id: "b-3", parentNodeIds: ["a-1", "a-2"] },
+    { value: "yellow", id: "c-1", parentNodeIds: ["b-1"] },
+    { value: "green", id: "c-2", parentNodeIds: ["b-2"] },
+    { value: "lime", id: "c-3", parentNodeIds: ["b-2"] },
+    { value: "cyan", id: "c-4", parentNodeIds: ["b-2"] },
+    { value: "brown", id: "c-5", parentNodeIds: ["b-2", "b-3"] },
+    { value: "red", id: "c-6", parentNodeIds: ["b-2", "b-3"] },
+    { value: "orange", id: "e-1", parentNodeIds: ["c-1", "c-3"] },
+    { value: "onion", id: "e-2", parentNodeIds: ["c-3"] },
+    { value: "carrot", id: "d-1", parentNodeIds: ["b-2"] },
+    { value: "cucumber", id: "d-2", parentNodeIds: ["b-2"] },
+    { value: "apple", id: "d-3", parentNodeIds: ["c-3"] }
+];
+
+//  Build a list of structured nodes
+values = [];
+list = [];
+selfRefs = [];
+for ( var i = 0; i < nodes.length; i++ ) {
+	list.push([ nodes[i].id, nodes[i].value, [], nodes[i].parentNodeIds, undefined ]);
+}
+values.sort()
+
+//  A utility, given a node id return the structured node
+function getListNode(id) {
+	for ( var i = 0; i < list.length; i++ ) {
+		if ( list[i][0] == id ) return list[i];
+	}
+	return undefined;
+}
+
+//  Populate structured nodes with their structured parents
+for ( var i = 0; i < list.length; i++ ) {
+	var parents = [];
+	for ( var j = 0; j < list[i][3].length; j++ ) {
+		parents.push(getListNode(list[i][3][j]));
+	}
+	list[i][3] = parents;
+}
+
+//  Populate structured nodes with their structured children
+for ( var i = 0; i < list.length; i++ ) {
+	for ( var j = 0; j < list[i][3].length; j++ ) {
+		list[i][3][j][2].push(list[i]);
+	}
+}
+
+//  Get the structured nodes with no parents
+treeRoots = [];
+for ( var i = 0; i < list.length; i++ ) {
+	if ( list[i][3].length == 0 ) treeRoots.push(list[i]);
+}
+
+function spanner(node, depth) {
+	//  Calculate the row span required for a node, by recursively walking the tree for the node
+	node[5] = depth;
+	var span;
+	var newDepth = depth;
+	if ( node[2].length == 0 ) {
+		span = 1;
+		node[4] = span;
+	} else {
+		span = 0;
+		newDepth = 0;
+		for ( var i = 0; i < node[2].length; i++ ) {
+			rtn = spanner(node[2][i], depth+1);
+			span += rtn[0];
+			if ( rtn[1] > newDepth ) newDepth = rtn[1];
+		}
+		node[4] = span
+	}
+	return [ span, newDepth ];
+}
+
+var depth = 0;
+//  Calculate rowspans for treeRoot
+for ( var i = 0; i < treeRoots.length; i++ ) {
+	newDepth = spanner(treeRoots[i], depth+1)[1];
+	if ( rtn[1] > newDepth ) newDepth = rtn[1];
+}
+depth = newDepth;
+
+//  Utility to print a tree root
+function printTR(treeRoots) {
+	var text = "";
+	for ( var i = 0; i < treeRoots.length; i++ ) {
+		text += printNT(treeRoots[i], 0);
+	}
+	return text;
+}
+
+//  Utility to space out fields, indent, etc.
+function spacer(n) {
+	var N = n * 3;
+	var text = "";
+	for ( var i = 0; i < N; i++ ) {
+		text += "&nbsp;"
+	}
+	return text;
+}
+
+//  Utility to print a node tree
+function printNT(node, depth) {
+	var text = "";
+	text += '<br>' + spacer(depth) + node[0] + spacer(1) + node[4] + spacer(1) + node[1] + spacer(1) + node[5];
+	for ( var j = 0; j < node[2].length; j++ ) {
+		text += printNT(node[2][j], depth + 1);
+	}
+	return text;
+}
+
+function tableTR(treeRoots) {
+	//  Convert a root tree into a set of rows
+	var text = "";
+	for ( var i = 0; i < treeRoots.length; i++ ) {
+		text += '<tr>' + tableNT(treeRoots[i], "");
+	}
+	return text;
+}
+
+function sourcePadding(parent, child) {
+	//  Generate empty table inners when child source is more than one source away from parent source.
+	//  $ is to end of row of sources.
+	var text = "";
+	if ( child == "$" ) {
+		for ( var i = 1; i < values.length - values.indexOf(parent); i++ ) {
+			text += '<td>' + '</td>';
+		}
+	} else if ( parent != child && parent != "" ) {
+		for ( var i = 1; i < values.indexOf(child) - values.indexOf(parent); i++ ) {
+			text += '<td>' + '</td>';
+		}
+	}
+	return text;
+}
+
+function tableNT(node, parentSource) {
+	//  Convert a node tree into table rows
+	var text = "";
+	if ( node[4] == 1 ) {
+		if ( node[2].length == 1 ) {
+			text += '<td>' 
+				+ '<div class="node">' + node[0] + '</div>' 
+				+ '<div class="tip">' + node[1] + '</div>' 
+			+ '</td>' 
+			+ tableNTfr(node[2][0], node[1]);
+		} else {
+			text += '<td colspan="' + ( 1 + depth - node[5] + 1 ) + '">' 
+				+ '<div class="leaf" >' + node[0] + '</div>' 
+				+ '<div class="value">' + node[1] + '</div>' 
+			+ '</td>' 
+			+ '</tr>';
+		}
+	} else {
+		text += '<td rowspan="' + node[4] + '">' 
+			+ '<div class="node">' + node[0] + '</div>' 
+			+ '<div class="tip">' + node[1] + '</div>' 
+		+ '</td>' 
+		+ tableNTfr(node[2][0], node[1]);
+		text += tableNTor(node[2][0], node[1])
+		for ( var i = 1; i < node[2].length; i++ ) {
+			text += '<tr>' + tableNT(node[2][i], node[1])
+		}
+	}
+	return text;
+}
+
+function tableNTfr(node, parentSource) {
+	//  The first row in a row span
+	var text = "";
+	if ( node[4] == 1 ) {
+		if ( node[2].length == 1 ) {
+			text += '<td>' 
+				+ '<div class="node">' + node[0] + '</div>' 
+				+ '<div class="tip">' + node[1] + '</div>' 
+			+ '</td>' 
+			+ tableNTfr(node[2][0], node[1]);
+		} else {
+			text += '<td colspan="' + ( 1 + depth - node[5] + 1 ) + '">' 
+				+ '<div class="leaf" >' + node[0] + '</div>' 
+				+ '<div class="value">' + node[1] + '</div>' 
+			+ '</td>' 
+			+ '</tr>';
+		}
+	} else {
+		text += '<td rowspan="' + node[4] + '">' 
+				+ '<div class="node">' + node[0] + '</div>' 
+				+ '<div class="tip">' + node[1] + '</div>' 
+			+ '</td>' 
+			+ tableNTfr(node[2][0], node[1]);
+	}
+	return text;	
+}
+
+function tableNTor(node) {
+	//  The other rows in a row span
+	var text = "";
+	if ( node[2].length != 0 ) {
+		if ( node[4] > 1 ) {
+			text += tableNTor(node[2][0], node[1])
+			for ( var i = 1; i < node[2].length; i++ ) {
+				text += '<tr>' + tableNT(node[2][i], node[1])
+			}
+		}
+	}
+	return text;
+}
+
+var treeTable;
+function doStuff() {
+	document.getElementById("collapse").style.background = "pink";
+
+	var printer = document.getElementById("printer");
+	printer.innerHTML = printTR( treeRoots );
+	treeTable = document.getElementById("treeTable");
+	treeTable.innerHTML = tableTR(treeRoots);
+}
+
+function collapse() {
+	document.getElementById("treeTable").style.borderCollapse = "collapse";
+
+	document.getElementById("collapse").style.background = "pink";
+	document.getElementById("separate").style.background = "none";
+}
+
+function separate() {
+	document.getElementById("treeTable").style.borderCollapse = "separate";
+
+	document.getElementById("separate").style.background = "pink";
+	document.getElementById("collapse").style.background = "none";
+}
+</script>
+</head>
+<body onload="doStuff()">
+Tree data characteristics:
+<ul>
+	<li>Nodes:
+		<ul>
+			<li>Node id</li>
+			<li>Node value</li>
+			<li>Parent node ids</li>
+		</ul>
+	</li>
+	<li>Constraints and assumptions:
+		<ul>
+			<li>Trees can share branches, but there must be no cycles</li>
+		</ul>
+	</li>
+</ul>
+Table format:
+<ul>
+	<li>Parent nodes row span child nodes</li>
+	<li>Non leaf node value hover tipped</li>
+	<li>Non leaf node highlighted on hover</li>
+	<li>Leaf node value displayed justified to right with right levelling colspan</li>
+</ul>
+<div>
+Parsed nodes with calculated row spans, node value, and depth:
+<div>
+<code id="printer">
+</code>
+</div>
+</div>
+<br>
+<div>
+Tree converted to table rows:<br>&nbsp;
+<div>
+<table id="treeTable" class="tree">
+</table>
+</div>
+</div>
+<div class="options">
+Formats:
+<table class="options">
+	<tr><th>Borders</th>
+	<tr><td id="collapse" onclick="collapse()">Collapse</td></tr>
+	<tr><td id="separate" onclick="separate()">Separate</td></tr>
+</table>
+</div>
+</body>
+</html>
