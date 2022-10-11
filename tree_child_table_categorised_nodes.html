@@ -173,9 +173,9 @@ function tableNT(node, parentSource) {
 		}
 	} else {
 		text += sourcePadding(parentSource, node[1]) + '<td rowspan="' + node[4] + '">' + node[0] + '</td>' + tableNTfr(node[2][0], node[1]);
-		text += tableNTor(node[2][0], node[1])
+		text += tableNTor(node[2][0]);
 		for ( var i = 1; i < node[2].length; i++ ) {
-			text += '<tr>' + tableNT(node[2][i], node[1])
+			text += '<tr>' + tableNT(node[2][i], node[1]);
 		}
 	}
 	return text;
@@ -201,9 +201,9 @@ function tableNTor(node) {
 	var text = "";
 	if ( node[2].length != 0 ) {
 		if ( node[4] > 1 ) {
-			text += tableNTor(node[2][0], node[1])
+			text += tableNTor(node[2][0])
 			for ( var i = 1; i < node[2].length; i++ ) {
-				text += '<tr>' + tableNT(node[2][i], node[1])
+				text += '<tr>' + tableNT(node[2][i])
 			}
 		}
 	}
@@ -222,6 +222,7 @@ var treeTable;
 function doStuff() {
 	document.getElementById("separate").style.background = "pink";
 	document.getElementById("enBorder").style.background = "pink";
+	document.getElementById("sortSource").style.background = "pink";
 
 	var printer = document.getElementById("printer");
 	printer.innerHTML = printTR( treeRoots );
@@ -262,6 +263,7 @@ function sortAbove() {
 
 	document.getElementById("sortAbove").style.background = "pink";
 	document.getElementById("sortBelow").style.background = "none";
+	document.getElementById("sortSource").style.background = "lightgrey";
 
 }
 
@@ -274,6 +276,7 @@ function sortBelow() {
 
 	document.getElementById("sortBelow").style.background = "pink";
 	document.getElementById("sortAbove").style.background = "none";
+	document.getElementById("sortSource").style.background = "lightgrey";
 }
 
 function collapse() {
@@ -346,7 +349,7 @@ Formats:
 	<tr><th>Skipped categories</th>
 	<tr><td id="sortAbove" onclick="sortAbove()">Sort above</td></tr>
 	<tr><td id="sortBelow" onclick="sortBelow()">Sort below</td></tr>
-	<tr><td style="background: lightgrey;)">Source order</td></tr>
+	<tr><td id="sortSource">Source order</td></tr>
 </table>
 </div>
 </body>
