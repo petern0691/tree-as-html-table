@@ -203,7 +203,7 @@ function tableNTor(node) {
 		if ( node[4] > 1 ) {
 			text += tableNTor(node[2][0])
 			for ( var i = 1; i < node[2].length; i++ ) {
-				text += '<tr>' + tableNT(node[2][i])
+				text += '<tr>' + tableNT(node[2][i], node[1])
 			}
 		}
 	}
