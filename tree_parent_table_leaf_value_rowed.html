@@ -232,7 +232,7 @@ function tableNT(node, parentSource) {
 			+ '<div class="tip">' + node[1] + '</div>' 
 		+ '</td>' 
 		+ tableNTfr(node[2][0], node[1]);
-		text += tableNTor(node[2][0], node[1])
+		text += tableNTor(node[2][0])
 		for ( var i = 1; i < node[2].length; i++ ) {
 			text += '<tr>' + tableNT(node[2][i], node[1])
 		}
@@ -272,7 +272,7 @@ function tableNTor(node) {
 	var text = "";
 	if ( node[2].length != 0 ) {
 		if ( node[4] > 1 ) {
-			text += tableNTor(node[2][0], node[1])
+			text += tableNTor(node[2][0])
 			for ( var i = 1; i < node[2].length; i++ ) {
 				text += '<tr>' + tableNT(node[2][i], node[1])
 			}
