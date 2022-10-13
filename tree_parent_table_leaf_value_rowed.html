@@ -68,6 +68,8 @@ table.options td {
 </style>
 <script>
 const nodes = [
+    { value: "spanner", id: "a-0", parentNodeIds: [] },
+    { value: "hammer", id: "e-0", parentNodeIds: ["a-0"] },
     { value: "alpha", id: "a-1", parentNodeIds: [] },
     { value: "beta", id: "a-2", parentNodeIds: [] },
     { value: "gamma", id: "a-3", parentNodeIds: [] },
@@ -78,13 +80,26 @@ const nodes = [
     { value: "green", id: "c-2", parentNodeIds: ["b-2"] },
     { value: "lime", id: "c-3", parentNodeIds: ["b-2"] },
     { value: "cyan", id: "c-4", parentNodeIds: ["b-2"] },
-    { value: "brown", id: "c-5", parentNodeIds: ["b-2", "b-3"] },
+    { value: "chisel", id: "d-4", parentNodeIds: ["b-2"] },
+    { value: "fork", id: "f-5", parentNodeIds: ["b-2", "b-3"] },
+    { value: "spoon", id: "h-4", parentNodeIds: ["b-2"] },
     { value: "red", id: "c-6", parentNodeIds: ["b-2", "b-3"] },
     { value: "orange", id: "e-1", parentNodeIds: ["c-1", "c-3"] },
     { value: "onion", id: "e-2", parentNodeIds: ["c-3"] },
     { value: "carrot", id: "d-1", parentNodeIds: ["b-2"] },
     { value: "cucumber", id: "d-2", parentNodeIds: ["b-2"] },
-    { value: "apple", id: "d-3", parentNodeIds: ["c-3"] }
+    { value: "apple", id: "d-3", parentNodeIds: ["c-3"] },
+    { value: "grape", id: "e-3", parentNodeIds: ["c-7"] },
+    { value: "sausage", id: "e-4", parentNodeIds: ["c-7"] },
+    { value: "steak", id: "c-7", parentNodeIds: ["a-4"] },
+    { value: "chicken", id: "f-1", parentNodeIds: ["e-3"] },
+    { value: "pork", id: "g-1", parentNodeIds: ["e-3"] },
+    { value: "beef", id: "h-1", parentNodeIds: ["e-3"] },
+    { value: "nut", id: "a-5", parentNodeIds: [] },
+    { value: "bolt", id: "c-8", parentNodeIds: ["a-5"] },
+    { value: "washer", id: "h-2", parentNodeIds: ["c-8"] },
+    { value: "pin", id: "h-3", parentNodeIds: ["c-8"] },
+    { value: "needle", id: "a-4", parentNodeIds: [] }
 ];
 
 //  Build a list of structured nodes
@@ -193,9 +208,9 @@ function tableTR(treeRoots) {
 	return text;
 }
 
-function sourcePadding(parent, child) {
-	//  Generate empty table inners when child source is more than one source away from parent source.
-	//  $ is to end of row of sources.
+function categoryPadding(parent, child) {
+	//  Generate empty table inners when child category is more than one category away from parent category.
+	//  $ is to end of row of categorys.
 	var text = "";
 	if ( child == "$" ) {
 		for ( var i = 1; i < values.length - values.indexOf(parent); i++ ) {
@@ -209,7 +224,7 @@ function sourcePadding(parent, child) {
 	return text;
 }
 
-function tableNT(node, parentSource) {
+function tableNT(node, parentCategory) {
 	//  Convert a node tree into table rows
 	var text = "";
 	if ( node[4] == 1 ) {
@@ -232,7 +247,7 @@ function tableNT(node, parentSource) {
 			+ '<div class="tip">' + node[1] + '</div>' 
 		+ '</td>' 
 		+ tableNTfr(node[2][0], node[1]);
-		text += tableNTor(node[2][0])
+		text += tableNTor(node[2][0], [ [ node[1], node[2][0][1] ] ]);
 		for ( var i = 1; i < node[2].length; i++ ) {
 			text += '<tr>' + tableNT(node[2][i], node[1])
 		}
@@ -240,7 +255,7 @@ function tableNT(node, parentSource) {
 	return text;
 }
 
-function tableNTfr(node, parentSource) {
+function tableNTfr(node, parentCategory) {
 	//  The first row in a row span
 	var text = "";
 	if ( node[4] == 1 ) {
@@ -267,14 +282,20 @@ function tableNTfr(node, parentSource) {
 	return text;	
 }
 
-function tableNTor(node) {
+function tableNTor(node, skips) {
 	//  The other rows in a row span
+	var skipped = [ ...skips ];
 	var text = "";
 	if ( node[2].length != 0 ) {
 		if ( node[4] > 1 ) {
-			text += tableNTor(node[2][0])
+			skipped.push([ node[1], node[2][0][1] ]);
+			text += tableNTor(node[2][0], skipped);
 			for ( var i = 1; i < node[2].length; i++ ) {
-				text += '<tr>' + tableNT(node[2][i], node[1])
+				text += '<tr>'
+				for ( var j = 0; j < skipped.length - 1; j++ ) {
+					text += categoryPadding(skipped[j][0], skipped[j][1], 0);
+				}
+				text += tableNT(node[2][i], node[1]);
 			}
 		}
 	}
