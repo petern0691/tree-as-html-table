@@ -146,9 +146,9 @@ function tableTR(treeRoots) {
 	return text;
 }
 
-function sourcePadding(parent, child) {
-	//  Generate empty table cells when child source is more than one source away from parent source.
-	//  $ is to end of row of sources.
+function categoryPadding(parent, child) {
+	//  Generate empty table cells when child category is more than one category away from parent category.
+	//  $ is to end of row of categorys.
 	var text = "";
 	if ( child == "$" ) {
 		for ( var i = 1; i < nodeCategoryIds.length - nodeCategoryIds.indexOf(parent); i++ ) {
@@ -162,48 +162,54 @@ function sourcePadding(parent, child) {
 	return text;
 }
 
-function tableNT(node, parentSource) {
+function tableNT(node, parentCategory) {
 	//  Convert a node tree into table rows
 	var text = "";
 	if ( node[4] == 1 ) {
 		if ( node[2].length == 1 ) {
-			text += sourcePadding(parentSource, node[1]) + '<td>' + node[0] + '</td>' + tableNTfr(node[2][0], node[1]);
+			text += categoryPadding(parentCategory, node[1]) + '<td>' + node[0] + '</td>' + tableNTfr(node[2][0], node[1]);
 		} else {
-			text += sourcePadding(parentSource, node[1]) + '<td>' + node[0] + '</td>' + sourcePadding(node[1], "$") + '</tr>';
+			text += categoryPadding(parentCategory, node[1]) + '<td>' + node[0] + '</td>' + categoryPadding(node[1], "$") + '</tr>';
 		}
 	} else {
-		text += sourcePadding(parentSource, node[1]) + '<td rowspan="' + node[4] + '">' + node[0] + '</td>' + tableNTfr(node[2][0], node[1]);
-		text += tableNTor(node[2][0]);
+		text += categoryPadding(parentCategory, node[1]) + '<td rowspan="' + node[4] + '">' + node[0] + '</td>' + tableNTfr(node[2][0], node[1]);
+		text += tableNTor(node[2][0], [ [ node[1], node[2][0][1] ] ]);
 		for ( var i = 1; i < node[2].length; i++ ) {
-			text += '<tr>' + tableNT(node[2][i], node[1]);
+			text += '<tr>' + tableNT(node[2][i], node[1])
 		}
 	}
 	return text;
 }
 
-function tableNTfr(node, parentSource) {
+function tableNTfr(node, parentCategory) {
 	//  The first row in a row span
 	var text = "";
 	if ( node[4] == 1 ) {
 		if ( node[2].length == 1 ) {
-			text += sourcePadding(parentSource, node[1]) + '<td>' + node[0] + '</td>' + tableNTfr(node[2][0], node[1]);
+			text += categoryPadding(parentCategory, node[1]) + '<td>' + node[0] + '</td>' + tableNTfr(node[2][0], node[1]);
 		} else {
-			text += sourcePadding(parentSource, node[1]) + '<td>' + node[0] + '</td>' + sourcePadding(node[1], "$") + '</tr>';
+			text += categoryPadding(parentCategory, node[1]) + '<td>' + node[0] + '</td>' + categoryPadding(node[1], "$") + '</tr>';
 		}
 	} else {
-		text += sourcePadding(parentSource, node[1]) + '<td rowspan="' + node[4] + '">' + node[0] + '</td>' + tableNTfr(node[2][0], node[1]);
+		text += categoryPadding(parentCategory, node[1]) + '<td rowspan="' + node[4] + '">' + node[0] + '</td>' + tableNTfr(node[2][0], node[1]);
 	}
 	return text;	
 }
 
-function tableNTor(node) {
+function tableNTor(node, skips) {
 	//  The other rows in a row span
+	var skipped = [ ...skips ];
 	var text = "";
 	if ( node[2].length != 0 ) {
 		if ( node[4] > 1 ) {
-			text += tableNTor(node[2][0])
+			skipped.push([ node[1], node[2][0][1] ]);
+			text += tableNTor(node[2][0], skipped);
 			for ( var i = 1; i < node[2].length; i++ ) {
-				text += '<tr>' + tableNT(node[2][i], node[1])
+				text += '<tr>'
+				for ( var j = 0; j < skipped.length - 1; j++ ) {
+					text += categoryPadding(skipped[j][0], skipped[j][1], 0);
+				}
+				text += tableNT(node[2][i], node[1]);
 			}
 		}
 	}
@@ -241,6 +247,7 @@ function enBorder() {
 
 	document.getElementById("enBorder").style.background = "pink";
 	document.getElementById("deBorder").style.background = "none";
+	
 }
 
 function deBorder() {
@@ -349,7 +356,7 @@ Formats:
 	<tr><th>Skipped categories</th>
 	<tr><td id="sortAbove" onclick="sortAbove()">Sort above</td></tr>
 	<tr><td id="sortBelow" onclick="sortBelow()">Sort below</td></tr>
-	<tr><td id="sortSource">Source order</td></tr>
+	<tr><td id="sortSource">Category order</td></tr>
 </table>
 </div>
 </body>
