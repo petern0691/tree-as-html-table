@@ -29,6 +29,8 @@ table.options td {
 </style>
 <script>
 const nodes = [
+    { nodeCategoryId: "a", id: "a-0", parentNodeIds: [] },
+    { nodeCategoryId: "e", id: "e-0", parentNodeIds: ["a-0"] },
     { nodeCategoryId: "a", id: "a-1", parentNodeIds: [] },
     { nodeCategoryId: "a", id: "a-2", parentNodeIds: [] },
     { nodeCategoryId: "a", id: "a-3", parentNodeIds: [] },
@@ -39,14 +41,26 @@ const nodes = [
     { nodeCategoryId: "c", id: "c-2", parentNodeIds: ["b-2"] },
     { nodeCategoryId: "c", id: "c-3", parentNodeIds: ["b-2"] },
     { nodeCategoryId: "c", id: "c-4", parentNodeIds: ["b-2"] },
-    { nodeCategoryId: "c", id: "c-5", parentNodeIds: ["b-2", "b-3"] },
+    { nodeCategoryId: "d", id: "d-4", parentNodeIds: ["b-2"] },
+    { nodeCategoryId: "f", id: "f-5", parentNodeIds: ["b-2", "b-3"] },
+    { nodeCategoryId: "h", id: "h-4", parentNodeIds: ["b-2"] },
     { nodeCategoryId: "c", id: "c-6", parentNodeIds: ["b-2", "b-3"] },
     { nodeCategoryId: "e", id: "e-1", parentNodeIds: ["c-1", "c-3"] },
     { nodeCategoryId: "e", id: "e-2", parentNodeIds: ["c-3"] },
     { nodeCategoryId: "d", id: "d-1", parentNodeIds: ["b-2"] },
     { nodeCategoryId: "d", id: "d-2", parentNodeIds: ["b-2"] },
     { nodeCategoryId: "d", id: "d-3", parentNodeIds: ["c-3"] },
-    { nodeCategoryId: "d", id: "d-4", parentNodeIds: ["b-2"] }
+    { nodeCategoryId: "e", id: "e-3", parentNodeIds: ["c-7"] },
+    { nodeCategoryId: "e", id: "e-4", parentNodeIds: ["c-7"] },
+    { nodeCategoryId: "c", id: "c-7", parentNodeIds: ["a-4"] },
+    { nodeCategoryId: "f", id: "f-1", parentNodeIds: ["e-3"] },
+    { nodeCategoryId: "g", id: "g-1", parentNodeIds: ["e-3"] },
+    { nodeCategoryId: "h", id: "h-1", parentNodeIds: ["e-3"] },
+    { nodeCategoryId: "a", id: "a-5", parentNodeIds: [] },
+    { nodeCategoryId: "c", id: "c-8", parentNodeIds: ["a-5"] },
+    { nodeCategoryId: "h", id: "h-2", parentNodeIds: ["c-8"] },
+    { nodeCategoryId: "h", id: "h-3", parentNodeIds: ["c-8"] },
+    { nodeCategoryId: "a", id: "a-4", parentNodeIds: [] }
 ];
 
 //  Build a list of structured nodes
@@ -147,9 +161,9 @@ function tableTR(treeRoots) {
 	return text;
 }
 
-function sourcePadding(parent, child) {
-	//  Generate empty table cells when child source is more than one source away from parent source.
-	//  $ is to end of row of sources.
+function categoryPadding(parent, child) {
+	//  Generate empty table cells when child category is more than one category away from parent category.
+	//  $ is to end of row of categorys.
 	var text = "";
 	if ( child == "$" ) {
 		for ( var i = 1; i < nodeCategoryIds.length - nodeCategoryIds.indexOf(parent); i++ ) {
@@ -163,18 +177,18 @@ function sourcePadding(parent, child) {
 	return text;
 }
 
-function tableNT(node, parentSource) {
+function tableNT(node, parentCategory) {
 	//  Convert a node tree into table rows
 	var text = "";
 	if ( node[4] == 1 ) {
 		if ( node[2].length == 1 ) {
-			text += sourcePadding(parentSource, node[1]) + '<td>' + node[0] + '</td>' + tableNTfr(node[2][0], node[1]);
+			text += categoryPadding(parentCategory, node[1]) + '<td>' + node[0] + '</td>' + tableNTfr(node[2][0], node[1]);
 		} else {
-			text += sourcePadding(parentSource, node[1]) + '<td>' + node[0] + '</td>' + sourcePadding(node[1], "$") + '</tr>';
+			text += categoryPadding(parentCategory, node[1]) + '<td>' + node[0] + '</td>' + categoryPadding(node[1], "$") + '</tr>';
 		}
 	} else {
-		text += sourcePadding(parentSource, node[1]) + '<td rowspan="' + node[4] + '">' + node[0] + '</td>' + tableNTfr(node[2][0], node[1]);
-		text += tableNTor(node[2][0])
+		text += categoryPadding(parentCategory, node[1]) + '<td rowspan="' + node[4] + '">' + node[0] + '</td>' + tableNTfr(node[2][0], node[1]);
+		text += tableNTor(node[2][0], [ [ node[1], node[2][0][1] ] ]);
 		for ( var i = 1; i < node[2].length; i++ ) {
 			text += '<tr>' + tableNT(node[2][i], node[1])
 		}
@@ -182,29 +196,35 @@ function tableNT(node, parentSource) {
 	return text;
 }
 
-function tableNTfr(node, parentSource) {
+function tableNTfr(node, parentCategory) {
 	//  The first row in a row span
 	var text = "";
 	if ( node[4] == 1 ) {
 		if ( node[2].length == 1 ) {
-			text += sourcePadding(parentSource, node[1]) + '<td>' + node[0] + '</td>' + tableNTfr(node[2][0], node[1]);
+			text += categoryPadding(parentCategory, node[1]) + '<td>' + node[0] + '</td>' + tableNTfr(node[2][0], node[1]);
 		} else {
-			text += sourcePadding(parentSource, node[1]) + '<td>' + node[0] + '</td>' + sourcePadding(node[1], "$") + '</tr>';
+			text += categoryPadding(parentCategory, node[1]) + '<td>' + node[0] + '</td>' + categoryPadding(node[1], "$") + '</tr>';
 		}
 	} else {
-		text += sourcePadding(parentSource, node[1]) + '<td rowspan="' + node[4] + '">' + node[0] + '</td>' + tableNTfr(node[2][0], node[1]);
+		text += categoryPadding(parentCategory, node[1]) + '<td rowspan="' + node[4] + '">' + node[0] + '</td>' + tableNTfr(node[2][0], node[1]);
 	}
 	return text;	
 }
 
-function tableNTor(node) {
+function tableNTor(node, skips) {
 	//  The other rows in a row span
+	var skipped = [ ...skips ];
 	var text = "";
 	if ( node[2].length != 0 ) {
 		if ( node[4] > 1 ) {
-			text += tableNTor(node[2][0]);
+			skipped.push([ node[1], node[2][0][1] ]);
+			text += tableNTor(node[2][0], skipped);
 			for ( var i = 1; i < node[2].length; i++ ) {
-				text += '<tr>' + tableNT(node[2][i], node[1]);
+				text += '<tr>'
+				for ( var j = 0; j < skipped.length - 1; j++ ) {
+					text += categoryPadding(skipped[j][0], skipped[j][1], 0);
+				}
+				text += tableNT(node[2][i], node[1]);
 			}
 		}
 	}
@@ -349,7 +369,7 @@ Formats:
 	<tr><th>Skipped categories</th>
 	<tr><td id="sortAbove" onclick="sortAbove()">Sort above</td></tr>
 	<tr><td id="sortBelow" onclick="sortBelow()">Sort below</td></tr>
-	<tr><td id="sortSource">Source order</td></tr>
+	<tr><td id="sortSource">Category order</td></tr>
 </table>
 </div>
 </body>
